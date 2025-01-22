@@ -1,0 +1,83 @@
+{
+  "name": "competitive-programming-helper",
+  "displayName": "Competitive Programming Helper",
+  "description": "It is useful for programmers who want to run the test cases of problems directly from their VSCode.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:competitive-programming-helper.fetchTestCases",
+    "onCommand:competitive-programming-helper.runTestCases",
+    "onCommand:competitive-programming-helper.openTestCasesWebview",
+    "onView:leetcodeTestCases"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "competitive-programming-helper",
+          "title": "Competitive Programming Helper",
+          "icon": "media/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "leetcodeTestCases",
+          "name": "LeetCode Test Cases",
+          "when": "view == explorer"
+        },
+        {
+          "id": "testCasesExplorer",
+          "name": "Test Cases Explorer",
+          "when": "view == explorer"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "competitive-programming-helper.fetchTestCases",
+        "title": "CPH: Fetch Test Cases"
+      },
+      {
+        "command": "competitive-programming-helper.runTestCases",
+        "title": "CPH: Run Test Cases"
+      },
+      {
+        "command": "competitive-programming-helper.openTestCasesWebview",
+        "title": "CPH: Open LeetCode Test Cases Webview"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.16.0"
+  },
+  "dependencies": {
+    "@rollup/plugin-commonjs": "^28.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "axios": "^1.7.9",
+    "electron": "^34.0.0",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7",
+    "rollup-plugin-svelte": "^7.2.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "svelte-preprocess": "^6.0.3"
+  }
+}
