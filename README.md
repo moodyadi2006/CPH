@@ -1,65 +1,96 @@
-# competitive-programming-helper README
+# 🏆 **Competitive Programming Helper** - Your Ultimate VSCode Companion
 
-This is the README for your extension "competitive-programming-helper". After writing up a brief description, we recommend including the following sections.
+Welcome to **Competitive Programming Helper**! 🚀 This extension is here to enhance your competitive programming experience by helping you **fetch LeetCode problems**, write and test your code in **.cpp** and **.py**, and easily verify your solutions before submission. Get ready for smooth, efficient problem-solving! 🧑‍💻
 
-## Features
+## 🚀 Key Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- 🌐 **Fetch LeetCode Problems** directly from URLs and view them inside VSCode.
+- 🧪 **Run Test Cases** right from the VSCode interface.
+- 🖥️ **Support for .cpp & .py** files: Write your solutions and test them seamlessly.
+- ✅ **Verify Your Code** to ensure functionality before submitting it to LeetCode.
 
-For example if there is an image subfolder under your extension project workspace:
+![Competitive Programming Helper](https://github.com/user-attachments/assets/fe9f2de3-b7f1-4b27-95fa-1b4a08f0a10c)
 
-\!\[feature X\]\(images/feature-x.png\)
+## 📦 Requirements
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+This extension requires **Visual Studio Code** and the necessary compilers or interpreters for running **.cpp** and **.py** files.
 
-## Requirements
+### 🛠️ Recommended Setup:
+- **C++ Compiler** (e.g., GCC)
+- **Python Interpreter**
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Ensure these tools are installed and configured in your environment to get started.
 
-## Extension Settings
+## ⚙️ Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+No complex configurations required! Simply ensure that your **code execution environment** (compiler/interpreter) is correctly set up, and you're good to go!
 
-For example:
+## 🐞 Known Issues
 
-This extension contributes the following settings:
+- ⚠️ **File Support**: Only **.cpp** and **.py** files are currently supported.
+- 🌐 **LeetCode URLs**: Some URLs may not return the expected format due to LeetCode updates.
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+If you encounter any issues, please [raise an issue](https://github.com/user/repository/issues) on GitHub, and we’ll work on fixing it.
 
-## Known Issues
+## 📅 Release Notes
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+### v1.0.0 🎉
+- Initial release of **Competitive Programming Helper**.
 
-## Release Notes
+### v1.0.1 🔧
+- Fixed issue with fetching problems from specific URLs.
 
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+### v1.1.0 🚀
+- Added support for **running test cases** directly in VSCode.
 
 ---
 
-## Working with Markdown
+## 🔄 How to Clone and Launch the Extension
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+### 1. Clone the Repository
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+Clone the repository to your local machine:
 
-## For more information
+```bash
+git clone https://github.com/user/competitive-programming-helper.git
+```
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+### 2. Install Dependencies
 
-**Enjoy!**
+Navigate to the cloned directory and install the required dependencies:
+
+```bash
+cd competitive-programming-helper
+npm install
+```
+
+### 3. Open in Visual Studio Code
+
+Once the dependencies are installed, open the project in VSCode:
+
+```bash
+code .
+```
+
+### 4. Launch the Extension
+
+To launch the extension, press **F5** or go to **Run > Start Debugging** in VSCode to launch a new VSCode window with the extension running.
+
+In the new window, you'll be able to use the extension's features like fetching LeetCode problems, running test cases, and writing code in **.cpp** or **.py**.
+
+🚨 **Note**: Make sure you have **Visual Studio Code** installed, along with the necessary C++ and Python environments configured.
+
+## 💡 Working with Markdown
+
+Enhance your README with these helpful Markdown tips:
+
+- 🔲 **Split the editor**: `Cmd + \` (macOS) | `Ctrl + \` (Windows/Linux)
+- 🔍 **Toggle preview**: `Shift + Cmd + V` (macOS) | `Shift + Ctrl + V` (Windows/Linux)
+- ✨ **Markdown snippets**: Press `Ctrl + Space` (Windows, Linux, macOS)
+
+## 📚 For More Information
+
+- [Visual Studio Code's Markdown Support](https://code.visualstudio.com/docs/languages/markdown)
+- [Markdown Syntax Reference](https://www.markdownguide.org/basic-syntax/)
+
+🎉 Happy coding, and may your problem-solving be efficient and fun!
