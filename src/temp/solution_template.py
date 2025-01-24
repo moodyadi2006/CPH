@@ -1,30 +1,32 @@
 class Solution:
-    def twoSum(self, nums, target):
-        # Create a dictionary to store numbers and their corresponding indices
-        number_map = {}
+    def addTwoNumbers(self, l1, l2):
+        carry = 0
+        result = []
 
-        # Loop through the array
-        for i, num in enumerate(nums):
-            # Calculate the difference between the target and the current number
-            diff = target - num
+        # Make sure the lists are of equal length by padding the shorter one with zeros
+        while len(l1) < len(l2):
+            l1.append(0)
+        while len(l2) < len(l1):
+            l2.append(0)
 
-            # Check if the difference already exists in the dictionary
-            if diff in number_map:
-                # If it exists, return the indices of the current number and the number that adds up to the target
-                return [i, number_map[diff]]
+        # Add corresponding digits from both lists
+        for i in range(len(l1)):
+            total = l1[i] + l2[i] + carry
+            carry, digit = divmod(total, 10)  # Calculate digit and carry
+            result.append(digit)  # Append the current digit to the result
 
-            # If it doesn't exist, add the current number and its index to the dictionary
-            number_map[num] = i
-        
-        # If no two numbers add up to the target, return None
-        return None
+        # If there's a carry left after the final addition, append it to the result
+        if carry:
+            result.append(carry)
+
+        return f"[{','.join(map(str, result))}]"
 
 # Test cases
 if __name__ == "__main__":
     solution = Solution()
-    # Test case 1
-    print(solution.twoSum([2,7,11,15], 9))
+        # Test case 1
+    print(solution.addTwoNumbers([2,4,3], [5,6,4]))
     # Test case 2
-    print(solution.twoSum([3,2,4], 6))
+    print(solution.addTwoNumbers([0], [0]))
     # Test case 3
-    print(solution.twoSum([3,3], 6))
+    print(solution.addTwoNumbers([9,9,9,9,9,9,9], [9,9,9,9]))

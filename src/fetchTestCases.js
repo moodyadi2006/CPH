@@ -70,9 +70,12 @@ int main() {
 // Function to generate a Python template and save it
 async function generatePyTemplate(functionSignature, testCases) {
   const cleanedTestCases = testCases.map((testCase) => {
+    // console.log(testCase)
     const cleanedFuncName = testCase.funcName
       .replace(/^(int|string|float|bool|object|double)\s*/, "") // Removes type declaration
       .trim();
+
+    // console.log(cleanedFuncName);
 
     const cleanedInputForVar = testCase.input
       .split(", ")
@@ -113,7 +116,7 @@ if __name__ == "__main__":
 `;
 
   const fileName = `solution_template.py`; // Python template file name
-  filePath = path.join(tempDir, fileName);
+  const filePath = path.join(tempDir, fileName);
 
   if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir);
@@ -175,7 +178,6 @@ async function fetchTestCases(problemUrl, preferredLanguage) {
       );
       const funcName = functionSignature.split("(")[0]; // Extract function name from signature
       const testCases = extractTestCasesFromContent(content, funcName);
-      console.log(testCases);
 
       // Generate the corresponding template based on preferred language
       if (preferredLanguage === "C++") {
@@ -199,19 +201,23 @@ async function fetchTestCases(problemUrl, preferredLanguage) {
 function extractFunctionSignature(codeSnippets) {
   const cppSnippet = codeSnippets.find((snippet) => snippet.lang === "C++");
   const pySnippet = codeSnippets.find((snippet) => snippet.lang === "Python");
-
-  // Assuming that the first snippet contains the function signature
   if (cppSnippet) {
     const match = cppSnippet.code.match(/(\w+\s+\w+)\s*\((.*?)\)/);
     if (match) {
       return match[1] + "(" + match[2] + ")";
     }
-  } else if (pySnippet) {
-    const match = pySnippet.code.match(/def (\w+)\((.*?)\)/);
+  }
+
+  if (pySnippet) {
+    const match = pySnippet.code.match(
+      /def\s+([a-zA-Z][a-zA-Z0-9_]*)\s*\((.*?)\)/
+    );
+
     if (match) {
       return match[1] + "(" + match[2] + ")";
     }
   }
+
   return "functionName"; // Default
 }
 
@@ -229,5 +235,5 @@ function extractTestCasesFromContent(content, funcName) {
 }
 
 module.exports = {
-  fetchTestCases
+  fetchTestCases,
 };
