@@ -18,8 +18,9 @@ function activate(context) {
         context.extensionUri
       ).getWebviewContent();
 
-      let fetchedFilePath; // Declare a variable outside to hold the filePath
-
+      // Declare a variable outside to hold the filePath
+      let fetchedFilePath; 
+      
       // Listen for messages from the webview
       panel.webview.onDidReceiveMessage(async (message) => {
         const language = message.language;
@@ -37,7 +38,6 @@ function activate(context) {
               testCases: testCases,
             });
 
-            // Save the filePath for later use
             fetchedFilePath = filePath;
           } catch (error) {
             panel.webview.postMessage({
@@ -47,12 +47,13 @@ function activate(context) {
           }
         } else if (message.command === "runTestCases") {
           const testCases = message.testCases;
+          // Early exit if filePath is not set
           if (!fetchedFilePath) {
             panel.webview.postMessage({
               command: "showError",
               message: "No file path available for running test cases.",
             });
-            return; // Early exit if filePath is not set
+            return;
           }
 
           try {
@@ -75,90 +76,11 @@ function activate(context) {
           }
         }
       });
-
-      // Mock function for running individual test case logic
     }
   );
 
   context.subscriptions.push(openWebviewCommand);
 
-  // Register command to fetch test cases
-  // const fetchTestCasesDisposable = vscode.commands.registerCommand(
-  //   "competitive-programming-helper.fetchTestCases",
-  //   async (url) => {
-  //     if (!url) {
-  //       url = await vscode.window.showInputBox({
-  //         prompt: "Enter the URL of the LeetCode problem to fetch test cases",
-  //         placeHolder: "https://leetcode.com/problems/example",
-  //       });
-  //     }
-
-  //     const testCases = await fetchTestCases(url);
-  //     // Update the TreeDataProvider with the fetched test cases
-  //     testCasesProvider.setTestCases(testCases);
-  //   }
-  // );
-
-  // // Register command to run test cases
-  // const runTestCasesDisposable = vscode.commands.registerCommand(
-  //   "competitive-programming-helper.runTestCases",
-  //   async (testCases) => {
-  //     if (!testCases || testCases.length === 0) {
-  //       vscode.window.showErrorMessage("No test cases provided!");
-  //       return;
-  //     }
-
-  //     // Show a file picker dialog to the user
-  //     const options = {
-  //       canSelectMany: false, // Allow only one file
-  //       openLabel: "Select File to Compile",
-  //       filters: {
-  //         "Code Files": ["py", "cpp"], // Allow only Python and C++ files
-  //       },
-  //     };
-
-  //     const uri = await vscode.window.showOpenDialog(options);
-
-  //     // If the user cancels, no URI will be returned
-  //     if (!uri || uri.length === 0) {
-  //       vscode.window.showErrorMessage("No file selected!");
-  //       return;
-  //     }
-
-  //     // Read the file content
-  //     const filePath = uri[0].fsPath;
-  //     const fs = require("fs");
-  //     const fileContent = fs.readFileSync(filePath, "utf-8");
-
-  //     // Determine the file type
-  //     const fileExtension = filePath.split(".").pop();
-  //     if (!["py", "cpp"].includes(fileExtension)) {
-  //       vscode.window.showErrorMessage(
-  //         "Invalid file format! Only Python (.py) and C++ (.cpp) are supported."
-  //       );
-  //       return;
-  //     }
-
-  //     // Run the test cases using the `runTestCases` function
-  //     try {
-  //       const result = await runTestCases(
-  //         fileContent,
-  //         fileExtension,
-  //         testCases
-  //       );
-  //       vscode.window.showInformationMessage(
-  //         `Test cases executed successfully:\n${result}`
-  //       );
-  //     } catch (error) {
-  //       vscode.window.showErrorMessage(`Execution failed:\n${error.message}`);
-  //     }
-  //   }
-  // );
-
-  // context.subscriptions.push(runTestCasesDisposable);
-  // context.subscriptions.push(fetchTestCasesDisposable);
-
-  // Register TreeView in Explorer panel
   const testCasesProvider = new TestCasesTreeDataProvider();
 
   context.subscriptions.push(
