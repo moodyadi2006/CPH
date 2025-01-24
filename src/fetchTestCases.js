@@ -151,7 +151,6 @@ async function fetchTestCases(problemUrl, preferredLanguage) {
     // API endpoint
     const endpoint = "https://leetcode.com/graphql/";
 
-    // Send request with authentication headers
     const response = await axios.post(
       endpoint,
       {
@@ -230,5 +229,5 @@ function extractTestCasesFromContent(content, funcName) {
 }
 
 module.exports = {
-  fetchTestCases,
+  fetchTestCases
 };

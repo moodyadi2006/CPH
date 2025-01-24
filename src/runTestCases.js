@@ -104,7 +104,7 @@ async function compileAndExecuteCpp(filePath, testCases, resultsOutput) {
     );
   });
 }
-
+// Function to compile and execute Python code
 async function compileAndExecutePython(filePath, testCases, resultsOutput) {
   return new Promise((resolve, reject) => {
     // Compile the Python code (Python doesn't need explicit compilation, so we just check for errors)
