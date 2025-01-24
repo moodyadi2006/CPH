@@ -2,8 +2,6 @@ const runTestCases = require("./src/runTestCases");
 const { fetchTestCases } = require("./src/fetchTestCases");
 const vscode = require("vscode");
 
-let filePath;
-
 // This method is called when your extension is activated
 function activate(context) {
   // Register command to open the Webview panel
@@ -24,10 +22,14 @@ function activate(context) {
 
       // Listen for messages from the webview
       panel.webview.onDidReceiveMessage(async (message) => {
+        const language = message.language;
         if (message.command === "fetchTestCases") {
           try {
             // Fetch test cases based on the URL
-            const { filePath, testCases } = await fetchTestCases(message.url); // Directly await the promise
+            const { filePath, testCases } = await fetchTestCases(
+              message.url,
+              language
+            ); // Directly await the promise
 
             // Post the test cases to the webview
             panel.webview.postMessage({
@@ -45,8 +47,6 @@ function activate(context) {
           }
         } else if (message.command === "runTestCases") {
           const testCases = message.testCases;
-          const results = [];
-
           if (!fetchedFilePath) {
             panel.webview.postMessage({
               command: "showError",
@@ -57,13 +57,15 @@ function activate(context) {
 
           try {
             // Run the test cases using the fetchedFilePath
-            const result = await runTestCases(fetchedFilePath, testCases);
-            results.push({ testCases, result });
+            const resultsOutput = await runTestCases(
+              fetchedFilePath,
+              testCases
+            );
 
             // Post the results to the webview
             panel.webview.postMessage({
               command: "displayRunResults",
-              results: results,
+              results: resultsOutput,
             });
           } catch (error) {
             panel.webview.postMessage({
@@ -427,6 +429,16 @@ class TestCasesViewProvider {
     <h2>LeetCode Test Cases</h2>
     <p>Paste the LeetCode problem URL to fetch test cases.</p>
     <input type="text" id="urlInput" placeholder="https://leetcode.com/problems/example">
+    <div>
+     <label>
+    <input type="radio" name="language" value="C++" checked>
+    C++
+  </label>
+  <label>
+    <input type="radio" name="language" value="Python">
+    Python
+  </label>
+    </div>
     <button id="fetchButton">Fetch Test Cases</button>
     <button id="runButton" disabled>Run Test Cases</button>
 
@@ -439,16 +451,22 @@ class TestCasesViewProvider {
 
         // Fetch Test Cases
         document.getElementById('fetchButton').addEventListener('click', () => {
-            const url = document.getElementById('urlInput').value;
-            if (url) {
-                vscode.postMessage({
-                    command: 'fetchTestCases',
-                    url: url
-                });
-            } else {
-                vscode.postMessage({ command: 'showError', message: 'Please provide a valid URL!' });
-            }
-        });
+  const url = document.getElementById('urlInput').value;
+  
+  // Get the selected language from the radio buttons
+  const selectedLanguage = document.querySelector('input[name="language"]:checked').value;
+
+  if (url) {
+    vscode.postMessage({
+      command: 'fetchTestCases',
+      url: url,
+      language: selectedLanguage // Send the selected language (either 'cpp' or 'python')
+    });
+  } else {
+    vscode.postMessage({ command: 'showError', message: 'Please provide a valid URL!' });
+  }
+});
+
 
         // Run Test Cases button click
         document.getElementById('runButton').addEventListener('click', () => {
@@ -465,58 +483,47 @@ class TestCasesViewProvider {
 
         // Listen for messages from the extension
         window.addEventListener('message', (event) => {
-            const message = event.data;
+    const message = event.data;
+    console.log("Received message:", message);
 
-            console.log("Received message:", message);
+    if (message.command === 'displayTestCases') {
+        // Correctly access the test cases array
+        const testCasesResult = message.testCases || [];
+        fetchedTestCases = testCasesResult;
+        const container = document.getElementById('testCasesContainer');
+        container.innerHTML = '';
 
-            if (message.command === 'displayTestCases') {
-                const testCases = message.testCases;
-                fetchedTestCases = testCases;
-                const container = document.getElementById('testCasesContainer');
-                container.innerHTML = '';
+        if (testCasesResult && testCasesResult.length > 0) {
+            testCasesResult.forEach((testCase, index) => {
+                const div = document.createElement('div');
+                div.className = 'test-case';
 
-                if (testCases && testCases.length > 0) {
-                    testCases.forEach((testCase, index) => {
-                        const div = document.createElement('div');
-                        div.className = 'test-case';
+                const heading = document.createElement('h3');
+                heading.textContent = 'Test Case ' + (index + 1);
+                heading.style.color = '#333';
 
-                        const heading = document.createElement('h3');
-                        heading.textContent = 'Test Case ' + (index + 1);
-                        heading.style.color = '#333';
+                const content = document.createElement('pre');
+                content.textContent = JSON.stringify(testCase, null, 2);
 
-                        const formattedTestCase = JSON.stringify(
-                            JSON.parse(JSON.stringify(testCase).replace(/\\"/g, '"')),
-                            null,
-                            2
-                        );
-
-                        const content = document.createElement('pre');
-                        content.textContent = formattedTestCase;
-
-                        div.appendChild(heading);
-                        div.appendChild(content);
-                        container.appendChild(div);
-                    });
-                    document.getElementById('runButton').disabled = false;
-                } else {
-                    container.innerHTML = '<p>No test cases found.</p>';
-                    document.getElementById('runButton').disabled = true;
-                }
-            }
-
-            if (message.command === 'showError') {
-                alert(message.message);
-            }
-
-            // Handle the results of the test cases
-            if (message.command === 'displayRunResults') {
-                const results = message.results;
-                console.log('Test case results:', results);
-                const resultsContainer = document.getElementById('resultsContainer');
-                resultsContainer.innerHTML = '<h3>Test Case Results</h3><pre>' + JSON.stringify(results, null, 2) + '</pre>';
-                resultsContainer.style.display = 'block'; // Show results container
-            }
-        });
+                div.appendChild(heading);
+                div.appendChild(content);
+                container.appendChild(div);
+            });
+            document.getElementById('runButton').disabled = false;
+        } else {
+            container.innerHTML = '<p>No test cases found.</p>';
+            document.getElementById('runButton').disabled = true;
+        }
+    } else if (message.command === 'showError') {
+        alert(message.message);
+    } else if (message.command === 'displayRunResults') {
+        const results = message.results;
+        console.log('Test case results:', results);
+        const resultsContainer = document.getElementById('resultsContainer');
+        resultsContainer.innerHTML = '<h3>Test Case Results</h3><pre>' + JSON.stringify(results, null, 2) + '</pre>';
+        resultsContainer.style.display = 'block';
+    }
+});
     </script>
 </body>
 </html>

@@ -9,11 +9,12 @@ let filePath;
 // Function to generate a C++ template and save it
 async function generateCppTemplate(functionSignature, testCases) {
   const cleanedTestCases = testCases.map((testCase) => {
-    // Remove 'double' from the funcName (or any other type you want to remove)
-    const cleanedFuncName = testCase.funcName.replace(/^double /, "").trim();
+    const cleanedFuncName = testCase.funcName
+      .replace(/^(int|string|float|object|double)\s*/, "")
+      .trim();
+
     return { ...testCase, funcName: cleanedFuncName };
   });
-
 
   const templateContent = `#include <bits/stdc++.h>
 using namespace std;
@@ -30,8 +31,20 @@ int main() {
     Solution solution;
     ${cleanedTestCases
       .map((testCase, index) => {
+        const parts = testCase.input.split(", ");
+        const inputParts = parts.filter(
+          (part) => part.includes("=") && !part.startsWith("val")
+        );
+        const inputStr = inputParts
+          .map((part) => part.split("= ")[1])
+          .join(", ");
+        const valPart =
+          parts.find((part) => part.startsWith("val"))?.split("= ")[1] || "";
+
         return `    // Test case ${index + 1}
-    cout << solution.${testCase.funcName}(${testCase.input}) << endl;`;
+        cout << solution.${testCase.funcName}(${inputStr}${
+          valPart ? ", " + valPart : ""
+        }) << endl;`;
       })
       .join("\n")}
 }
@@ -56,15 +69,42 @@ int main() {
 
 // Function to generate a Python template and save it
 async function generatePyTemplate(functionSignature, testCases) {
+  const cleanedTestCases = testCases.map((testCase) => {
+    const cleanedFuncName = testCase.funcName
+      .replace(/^(int|string|float|bool|object|double)\s*/, "") // Removes type declaration
+      .trim();
+
+    const cleanedInputForVar = testCase.input
+      .split(", ")
+      .map((input) => input.split(" =")[0]) // Extract only the value after "="
+      .join(", ");
+    // Modify the function signature to include `self` as the first argument
+    const cleanedFunctionSignature = `def ${cleanedFuncName}(self, ${cleanedInputForVar})`;
+
+    const cleanedInput = testCase.input
+      .split(", ")
+      .map((input) => input.split("= ")[1]) // Extract only the value after "="
+      .join(", ");
+
+    return {
+      ...testCase,
+      funcName: cleanedFuncName,
+      input: cleanedInput,
+      functionSignature: cleanedFunctionSignature,
+    };
+  });
+
   const templateContent = `class Solution:
-    def ${functionSignature}:
+    ${
+      cleanedTestCases[0].functionSignature
+    }:  # Assuming single test case for signature
         # Write your solution here
         pass
 
 # Test cases
 if __name__ == "__main__":
     solution = Solution()
-    ${testCases
+    ${cleanedTestCases
       .map((testCase, index) => {
         return `    # Test case ${index + 1}
     print(solution.${testCase.funcName}(${testCase.input}))`;
@@ -90,7 +130,7 @@ if __name__ == "__main__":
 }
 
 // This function fetches the test cases for a given LeetCode problem URL
-async function fetchTestCases(problemUrl, preferredLanguage = "C++") {
+async function fetchTestCases(problemUrl, preferredLanguage) {
   try {
     // Extract the problem slug from the URL (e.g., "two-sum" from "https://leetcode.com/problems/two-sum/")
     const problemSlug = problemUrl.split("/").filter(Boolean).pop();
