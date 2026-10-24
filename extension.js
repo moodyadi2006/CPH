@@ -513,7 +513,15 @@ function getWebviewContent() {
         const results = message.results;
         console.log('Test case results:', results);
         const resultsContainer = document.getElementById('resultsContainer');
-        resultsContainer.innerHTML = '<h3>Test Case Results</h3><pre>' + JSON.stringify(results, null, 2) + '</pre>';
+        // textContent, not innerHTML: results include program output and
+        // expected answers, which may contain characters like < or >.
+        resultsContainer.innerHTML = '';
+        const heading = document.createElement('h3');
+        heading.textContent = 'Test Case Results';
+        const content = document.createElement('pre');
+        content.textContent = JSON.stringify(results, null, 2);
+        resultsContainer.appendChild(heading);
+        resultsContainer.appendChild(content);
         resultsContainer.style.display = 'block';
     }
 });
