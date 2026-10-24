@@ -4,6 +4,12 @@ All notable changes to the "competitive-programming-helper" extension will be do
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.1]
+
+- Added an MIT license.
+- Updated `axios` (and its `follow-redirects`/`form-data` dependencies) to fix several security advisories.
+- README: added a screenshot and instructions for running the extension from source.
+
 ## [0.1.0]
 
 - Fixed test case argument parsing to correctly handle array/nested inputs (e.g. `nums = [2,7,11,15], target = 9`) instead of naively splitting on every comma.

@@ -59,6 +59,10 @@ Found a bug? Please [open an issue](https://github.com/moodyadi2006/CPH/issues).
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes.
 
+### 0.1.1
+
+Added an MIT license and updated `axios` to fix security advisories.
+
 ### 0.1.0
 
 Correctness fixes to test case parsing and C++ code generation, added LinkedList/TreeNode support, a "Run Test Cases" CodeLens, an execution timeout setting, manual test case entry, and a working "recently fetched problems" sidebar.
