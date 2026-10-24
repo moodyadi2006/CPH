@@ -2,7 +2,7 @@
   "name": "compProgrammingHelper",
   "displayName": "CPH: LeetCode Test Case Runner",
   "description": "Fetch LeetCode problem test cases and run them against your C++/Python solution directly from VS Code, with LinkedList/TreeNode support and a Run button in the editor.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "AdityaKumar",
   "license": "MIT",
   "icon": "media/icon.png",

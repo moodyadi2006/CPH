@@ -59,6 +59,10 @@ Found a bug? Please [open an issue](https://github.com/moodyadi2006/CPH/issues).
 
 See [CHANGELOG.md](CHANGELOG.md) for full release notes.
 
+### 0.1.2
+
+Fixed the test results panel so output containing `<` or `>` displays correctly.
+
 ### 0.1.1
 
 Added an MIT license and updated `axios` to fix security advisories.

@@ -4,6 +4,10 @@ All notable changes to the "competitive-programming-helper" extension will be do
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [0.1.2]
+
+- Fixed the webview's test results panel so program output and expected answers containing characters like `<` or `>` are shown as plain text instead of being interpreted as HTML.
+
 ## [0.1.1]
 
 - Added an MIT license.
