@@ -50,3 +50,7 @@ Correctness fixes to test case parsing and C++ code generation, added LinkedList
 ---
 
 **Enjoy!**
+
+## License
+
+[MIT](LICENSE)
