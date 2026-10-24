@@ -4,6 +4,8 @@ Fetch a LeetCode problem's sample test cases and run them against your solution 
 
 Paste a problem URL, get a ready-to-fill C++ or Python solution file with the test cases already wired up, write your solution, and run it right from the editor.
 
+![Competitive Programming Helper](https://github.com/user-attachments/assets/fe9f2de3-b7f1-4b27-95fa-1b4a08f0a10c)
+
 ## Features
 
 - **Fetch test cases directly from a LeetCode URL** — no browser extension required. Pulls the problem's function signature and sample inputs/outputs straight from LeetCode.
@@ -38,6 +40,20 @@ This extension contributes the following setting:
 - `Node*` (random-pointer list) and N-ary `Node` problems aren't deserialized automatically — these fall back to a best-effort call that likely won't compile.
 - Only C++ and Python are supported.
 - Fetched problems are stored under the extension's own install directory, so a Marketplace update to a new version clears your previously fetched problem history (your own solution code is unaffected unless you moved it elsewhere).
+
+## Running from source
+
+1. Clone the repository and install dependencies:
+
+   ```bash
+   git clone https://github.com/moodyadi2006/CPH.git
+   cd CPH
+   npm install
+   ```
+
+2. Open the folder in VS Code (`code .`) and press **F5** (or **Run > Start Debugging**) to launch a new VS Code window with the extension loaded.
+
+Found a bug? Please [open an issue](https://github.com/moodyadi2006/CPH/issues).
 
 ## Release Notes
 
