@@ -1,9 +1,60 @@
-const runTestCases = require("./src/runTestCases");
-const { fetchTestCases } = require("./src/fetchTestCases");
+const fs = require("fs");
+const path = require("path");
 const vscode = require("vscode");
+const runTestCases = require("./src/runTestCases");
+const { fetchTestCases, regenerateTemplate } = require("./src/fetchTestCases");
+const { tempDir } = require("./src/paths");
+const { SolutionCodeLensProvider, isGeneratedSolutionFile } = require("./src/codeLensProvider");
+const { TestCasesTreeDataProvider } = require("./src/testCasesTreeDataProvider");
+
+const outputChannel = vscode.window.createOutputChannel("Competitive Programming Helper");
+
+function getExecutionTimeoutMs() {
+  return vscode.workspace.getConfiguration("competitiveProgrammingHelper").get("executionTimeoutMs", 5000);
+}
+
+// Shared by the CodeLens "Run" button and the runTestCases Command
+// Palette entry - reads the test cases persisted alongside the solution
+// file at fetch time and reports pass/fail to a dedicated output channel.
+async function runSolutionFile(filePath) {
+  if (!isGeneratedSolutionFile(filePath)) {
+    vscode.window.showErrorMessage("This isn't a generated CPH solution file. Fetch a problem via the CPH webview first.");
+    return;
+  }
+
+  const dir = path.dirname(filePath);
+  const testCasesPath = path.join(dir, "testcases.json");
+  if (!fs.existsSync(testCasesPath)) {
+    vscode.window.showErrorMessage("No testcases.json found next to this file. Fetch this problem via the CPH webview first.");
+    return;
+  }
+
+  const testCases = JSON.parse(fs.readFileSync(testCasesPath, "utf-8"));
+  const results = await runTestCases(filePath, testCases, { timeoutMs: getExecutionTimeoutMs() });
+
+  outputChannel.clear();
+  outputChannel.show(true);
+  outputChannel.appendLine(`Running test cases for ${path.basename(dir)}...`);
+
+  if (results && results.compileError) {
+    outputChannel.appendLine(`Compile error:\n${results.compileError}`);
+    return;
+  }
+
+  results.forEach((result) => {
+    outputChannel.appendLine(`Test ${result.testCase}: ${result.status.toUpperCase()}`);
+    if (result.status !== "passed") {
+      outputChannel.appendLine(`  expected: ${result.expected}`);
+      outputChannel.appendLine(`  actual:   ${result.actual}`);
+      if (result.error) outputChannel.appendLine(`  ${result.error}`);
+    }
+  });
+}
 
 // This method is called when your extension is activated
 function activate(context) {
+  const testCasesProvider = new TestCasesTreeDataProvider(tempDir);
+
   // Register command to open the Webview panel
   const openWebviewCommand = vscode.commands.registerCommand(
     "competitive-programming-helper.openTestCasesWebview",
@@ -14,31 +65,46 @@ function activate(context) {
         vscode.ViewColumn.One,
         { enableScripts: true, localResourceRoots: [context.extensionUri] }
       );
-      panel.webview.html = new TestCasesViewProvider(
-        context.extensionUri
-      ).getWebviewContent();
+      panel.webview.html = getWebviewContent();
 
-      // Declare a variable outside to hold the filePath
-      let fetchedFilePath; 
-      
+      // Tracks the most recently fetched problem so Run can regenerate
+      // the solution's test harness (needed when a test case was added
+      // manually since the fetch) and so the harness knows what
+      // language/signature to regenerate against.
+      let fetchedFilePath;
+      let lastLanguage;
+      let lastSignatureInfo;
+      let lastProblemDir;
+
       // Listen for messages from the webview
       panel.webview.onDidReceiveMessage(async (message) => {
         const language = message.language;
         if (message.command === "fetchTestCases") {
           try {
-            // Fetch test cases based on the URL
-            const { filePath, testCases } = await fetchTestCases(
-              message.url,
-              language
-            ); // Directly await the promise
+            const result = await fetchTestCases(message.url, language);
 
-            // Post the test cases to the webview
+            if (!result || !result.filePath) {
+              panel.webview.postMessage({
+                command: "showError",
+                message: "Failed to fetch test cases.",
+              });
+              return;
+            }
+
             panel.webview.postMessage({
               command: "displayTestCases",
-              testCases: testCases,
+              testCases: result.testCases,
             });
 
-            fetchedFilePath = filePath;
+            fetchedFilePath = result.filePath;
+            lastLanguage = result.language;
+            lastSignatureInfo = result.signatureInfo;
+            lastProblemDir = result.problemDir;
+
+            const doc = await vscode.workspace.openTextDocument(fetchedFilePath);
+            await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Beside, preview: false });
+
+            testCasesProvider.refresh();
           } catch (error) {
             panel.webview.postMessage({
               command: "showError",
@@ -57,13 +123,25 @@ function activate(context) {
           }
 
           try {
-            // Run the test cases using the fetchedFilePath
-            const resultsOutput = await runTestCases(
-              fetchedFilePath,
-              testCases
-            );
+            // A manually added test case only exists in the webview's
+            // in-memory list until the harness is regenerated - the
+            // compiled binary otherwise only knows about whichever
+            // cases existed when the file was last generated, and a new
+            // case would always read past the end of its stdout.
+            if (lastLanguage && lastSignatureInfo && lastProblemDir) {
+              const regenResult = await regenerateTemplate(lastLanguage, lastSignatureInfo, testCases, lastProblemDir);
+              if (regenResult && regenResult.filePath) {
+                fetchedFilePath = regenResult.filePath;
+              }
+              fs.writeFileSync(
+                path.join(lastProblemDir, "testcases.json"),
+                JSON.stringify(testCases, null, 2),
+                "utf-8"
+              );
+            }
 
-            // Post the results to the webview
+            const resultsOutput = await runTestCases(fetchedFilePath, testCases, { timeoutMs: getExecutionTimeoutMs() });
+
             panel.webview.postMessage({
               command: "displayRunResults",
               results: resultsOutput,
@@ -81,82 +159,28 @@ function activate(context) {
 
   context.subscriptions.push(openWebviewCommand);
 
-  const testCasesProvider = new TestCasesTreeDataProvider();
-
   context.subscriptions.push(
-    vscode.window.createTreeView("testCasesExplorer", {
-      treeDataProvider: testCasesProvider,
+    vscode.window.createTreeView("testCasesExplorer", { treeDataProvider: testCasesProvider }),
+    vscode.languages.registerCodeLensProvider(
+      [{ language: "cpp" }, { language: "python" }],
+      new SolutionCodeLensProvider()
+    ),
+    vscode.commands.registerCommand("competitive-programming-helper.runFromCodeLens", (filePath) =>
+      runSolutionFile(filePath)
+    ),
+    vscode.commands.registerCommand("competitive-programming-helper.runTestCases", () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showErrorMessage("Open a generated CPH solution file first.");
+        return;
+      }
+      return runSolutionFile(editor.document.fileName);
     })
   );
 }
 
-// Tree Data Provider to display test cases in the Explorer panel
-class TestCasesTreeDataProvider {
-  constructor() {
-    this._onDidChangeTreeData = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this._onDidChangeTreeData.event;
-    this.testCases = []; // Placeholder for your test cases data
-  }
-  // Get the root of the tree
-  getTreeItem(element) {
-    return element;
-  }
-
-  // Get the children (test cases) for the root item
-  getChildren(element) {
-    if (!element) {
-      // Return the root node which can be a "Test Cases" label or any other relevant title
-      return [
-        new vscode.TreeItem(
-          "Test Cases",
-          vscode.TreeItemCollapsibleState.Collapsed
-        ),
-      ];
-    }
-
-    // Return test cases as tree items here
-    return this.testCases.map((testCase) => {
-      const treeItem = new vscode.TreeItem(
-        testCase.name,
-        vscode.TreeItemCollapsibleState.None
-      );
-      treeItem.command = {
-        command: "competitive-programming-helper.runTestCases",
-        title: "Run Test Case",
-        arguments: [testCase],
-      };
-      return treeItem;
-    });
-  }
-
-  // Optionally, you can define when the tree view should be refreshed
-  refresh() {
-    this._onDidChangeTreeData.fire();
-  }
-
-  // Set test cases data
-  setTestCases(testCases) {
-    this.testCases = testCases;
-    this.refresh();
-  }
-}
-
-// Webview View Provider class (Optional, if you still want the webview functionality)
-class TestCasesViewProvider {
-  constructor(extensionUri) {
-    this.extensionUri = extensionUri;
-  }
-
-  resolveWebviewView(webviewView) {
-    webviewView.webview.options = {
-      enableScripts: true,
-      localResourceRoots: [this.extensionUri],
-    };
-    webviewView.webview.html = this.getWebviewContent();
-  }
-
-  getWebviewContent() {
-    return `<!DOCTYPE html>
+function getWebviewContent() {
+  return `<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -187,6 +211,10 @@ class TestCasesViewProvider {
             margin-bottom: 1.5rem;
             font-size: 2rem;
             font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.1rem;
         }
 
         p {
@@ -233,6 +261,11 @@ class TestCasesViewProvider {
             color: white;
         }
 
+        #addTestCaseButton {
+            background-color: #8e44ad;
+            color: white;
+        }
+
         button:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -243,6 +276,14 @@ class TestCasesViewProvider {
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+
+        .manual-add {
+            background: white;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
         }
 
         .test-cases {
@@ -324,7 +365,7 @@ class TestCasesViewProvider {
                 color: #f0f0f0;
             }
 
-            .test-case, .results-container {
+            .test-case, .results-container, .manual-add {
                 background: #2d2d2d;
             }
 
@@ -340,7 +381,7 @@ class TestCasesViewProvider {
                 color: #f0f0f0;
             }
 
-            h2, p {
+            h2, h3, p {
                 color: #f0f0f0;
             }
         }
@@ -364,6 +405,13 @@ class TestCasesViewProvider {
     <button id="fetchButton">Fetch Test Cases</button>
     <button id="runButton" disabled>Run Test Cases</button>
 
+    <div class="manual-add">
+        <h3>Add a test case manually</h3>
+        <input type="text" id="manualInput" placeholder="Input (e.g. nums = [1,2,3], target = 5)">
+        <input type="text" id="manualOutput" placeholder="Expected Output (e.g. [0,1])">
+        <button id="addTestCaseButton">Add Test Case</button>
+    </div>
+
     <div class="test-cases" id="testCasesContainer"></div>
     <div class="results-container" id="resultsContainer"></div>
 
@@ -374,7 +422,7 @@ class TestCasesViewProvider {
         // Fetch Test Cases
         document.getElementById('fetchButton').addEventListener('click', () => {
   const url = document.getElementById('urlInput').value;
-  
+
   // Get the selected language from the radio buttons
   const selectedLanguage = document.querySelector('input[name="language"]:checked').value;
 
@@ -389,6 +437,41 @@ class TestCasesViewProvider {
   }
 });
 
+        function renderTestCase(container, index, testCase) {
+            const div = document.createElement('div');
+            div.className = 'test-case';
+
+            const heading = document.createElement('h3');
+            heading.textContent = 'Test Case ' + index;
+
+            const content = document.createElement('pre');
+            content.textContent = JSON.stringify(testCase, null, 2);
+
+            div.appendChild(heading);
+            div.appendChild(content);
+            container.appendChild(div);
+        }
+
+        // Add a test case manually, without needing a fresh fetch
+        document.getElementById('addTestCaseButton').addEventListener('click', () => {
+            const input = document.getElementById('manualInput').value.trim();
+            const output = document.getElementById('manualOutput').value.trim();
+            if (!input || !output) {
+                alert('Please provide both input and output.');
+                return;
+            }
+
+            if (!fetchedTestCases) fetchedTestCases = [];
+            const funcName = fetchedTestCases.length ? fetchedTestCases[0].funcName : null;
+            const newCase = { funcName, input, output };
+            fetchedTestCases.push(newCase);
+
+            renderTestCase(document.getElementById('testCasesContainer'), fetchedTestCases.length, newCase);
+
+            document.getElementById('manualInput').value = '';
+            document.getElementById('manualOutput').value = '';
+            document.getElementById('runButton').disabled = false;
+        });
 
         // Run Test Cases button click
         document.getElementById('runButton').addEventListener('click', () => {
@@ -417,19 +500,7 @@ class TestCasesViewProvider {
 
         if (testCasesResult && testCasesResult.length > 0) {
             testCasesResult.forEach((testCase, index) => {
-                const div = document.createElement('div');
-                div.className = 'test-case';
-
-                const heading = document.createElement('h3');
-                heading.textContent = 'Test Case ' + (index + 1);
-                heading.style.color = '#333';
-
-                const content = document.createElement('pre');
-                content.textContent = JSON.stringify(testCase, null, 2);
-
-                div.appendChild(heading);
-                div.appendChild(content);
-                container.appendChild(div);
+                renderTestCase(container, index + 1, testCase);
             });
             document.getElementById('runButton').disabled = false;
         } else {
@@ -450,7 +521,6 @@ class TestCasesViewProvider {
 </body>
 </html>
 `;
-  }
 }
 
 function deactivate() {}
